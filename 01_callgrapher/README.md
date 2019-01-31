@@ -1,24 +1,17 @@
+# Call Graph
 
 These instructions assume that your current directory starts out as the
 "callgrapher" directory within the package.
 
 
-Building with CMake
-==============================================
+## Building with CMake
 
-1. Create a new directory for building.
-  e.g. mkdir ../callgrapherbuild
-
-2. Change into the new directory.
-  e.g. cd ../callgrapherbuild
-
-3. Run CMake with the path to the LLVM source. For LLVM 3.5
-and later, LLVM can be built with configure even if the callgrapher is built
-with CMake.
-  e.g. cmake -DLLVM_DIR=</path/to/LLVM/build>/share/llvm/cmake/ ../callgrapher
-
-4. Run make inside the build directory.
-  e.g. make
+```
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+```
 
 This produces a dynamic callgrapher tool called
 tools/callgrapher/callgrapher and a library for printing out the
@@ -30,8 +23,7 @@ clang -g -c -emit-llvm ../callgrapher/test/simpletest.c -o calls.bc
 tools/callgrapher/callgrapher calls.bc
 
 
-Building with Autoconf / configure
-==============================================
+## Building with Autoconf / configure
 
 1. Download and build LLVM as per the standard instructions.
   (http://llvm.org/docs/GettingStarted.html#getting-started-quickly-a-summary)
