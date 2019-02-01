@@ -28,39 +28,36 @@ WeightedCallGraphPass::runOnModule(Module &m) {
 }
 
 
-// Output for a pure analysis pass should happen in the print method.
-// It is called automatically after the analysis pass has finished collecting
-// its information.
 void
 WeightedCallGraphPass::print(raw_ostream &out, const Module *m) const {
   out << "digraph {\n  node [shape=record];\n";
 
   // Print out all function nodes
-  for (/* Iterate through all functions */) {
-    out << "  " << "TODO" /* Print out the function name here. */
-        << "[label=\"{" << "TODO" /* Print out the function name here. */
-        << "|Weight: " << "TODO" /* The weight of this function */;
+  for (auto const& function: this->function_list) {
+    out << "  " << function.name
+        << "[label=\"{" << function.name
+        << "|Weight: " << function.weight;
 
     unsigned lineID = 0;
-    for (/* For each call site in the function */) {
+    for (auto const& callsite: function.call_list) {
       out << "|<l" << lineID << ">"
-          << "TODO" /* The file name of the callsite */ << ":"
-          << "TODO" /* The line number */;
+          << callsite.file << ":"
+          << callsite.f->name;
       ++lineID;
     }
     out << "}\"];\n";
   }
 
   // Print the edges between them
-  for (/* Iterate through all functions */) {
+  for (auto const& function: this->function_list) {
     unsigned lineID = 0;
-    for (/* For each call site in the function */) {
-      for (/* For each possible call target */) {
-        out << "  " << "TODO" /* ID for the caller function */
-            << ":l" << lineID
-            << " -> " << "TODO" /* ID for the callee function */ << ";\n";
-      }
-      ++lineID;
+    //for (auto const& function: this->function_list) {
+    for (auto const& callsite: function.call_list) {
+      out << "  " << function.name
+          << ":l" << lineID
+          << " -> " << callsite.f->name<< ";\n";
+      //}
+      +lineID;
     }
   }
 

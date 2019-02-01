@@ -1,11 +1,12 @@
 
 #include "llvm/AsmParser/Parser.h"
-#include "llvm/Bitcode/ReaderWriter.h"
+#include "llvm/Bitcode/BitcodeWriter.h"
+#include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IRReader/IRReader.h"
-#include "llvm/PassManager.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ManagedStatic.h"
@@ -14,6 +15,7 @@
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/IR/LegacyPassManager.h"
 
 #include <memory>
 #include <string>
@@ -24,6 +26,8 @@
 using namespace std;
 using namespace llvm;
 
+
+static LLVMContext MainContext;
 
 // TODO: This is a temporary placeholder until make_unique ships widely.
 template<typename T, typename... Args>
@@ -73,16 +77,17 @@ main (int argc, char **argv, const char **env) {
   // This boilerplate provides convenient stack traces and clean LLVM exit
   // handling. It also initializes the built in support for convenient
   // command line option handling.
-  sys::PrintStackTraceOnErrorSignal();
+  sys::PrintStackTraceOnErrorSignal(argv[0]);
   llvm::PrettyStackTraceProgram X(argc, argv);
   llvm_shutdown_obj shutdown;
   cl::ParseCommandLineOptions(argc, argv);
 
   // Construct an IR file from the filename passed on the command line.
-  LLVMContext &context = getGlobalContext();
+  LLVMContext &context = MainContext;
   SMDiagnostic err;
   unique_ptr<Module> module;
-  module.reset(ParseIRFile(inPath.getValue(), err, context));
+  //module.reset(parseIRFile(inPath.getValue(), err, context));
+  module = parseIRFile(inPath.getValue(), err, context);
 
   if (!module.get()) {
     errs() << "Error reading bitcode file.\n";
@@ -91,8 +96,8 @@ main (int argc, char **argv, const char **env) {
   }
 
   // Build up all of the passes that we want to run on the module.
-  PassManager pm;
-  pm.add(new DataLayoutPass(module.get()));
+  legacy::PassManager pm;
+  //pm.add(*module.get());
 
   //TODO: You may choose to add additional passes here for things like alias
   // analysis.

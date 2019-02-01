@@ -14,25 +14,35 @@
 
 namespace callgraphs {
 
+struct called;
+struct function;
 
-// You may add anything you wish to this file.
 
+struct function {
+	char *name;
+	int weight;
+	std::vector<struct called> call_list;
+};
+
+struct called {
+	char *file;
+	int line;
+	struct function *f;
+};
 
 struct WeightedCallGraphPass : public llvm::ModulePass {
+	static char ID;
+	
+	std::vector<function> function_list;
 
-  static char ID;
-
-  // NOTE: Feel free to modify this class as you see fit.
-
-  WeightedCallGraphPass()
-    : ModulePass(ID)
-      { }
+	WeightedCallGraphPass() : ModulePass(ID)
+	{ }
   
   virtual ~WeightedCallGraphPass() { }
 
   virtual void getAnalysisUsage(llvm::AnalysisUsage &au) const override {
     au.setPreservesAll();
-    au.addRequired<llvm::DataLayoutPass>();
+    //au.addRequired<llvm::DataLayout>();
   }
 
   virtual void print(llvm::raw_ostream &out,
