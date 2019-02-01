@@ -1,12 +1,14 @@
 # Call Graph
 
+
+## Building
+
 These instructions assume that your current directory starts out as the
 "callgrapher" directory within the package.
 
 
-## Building with CMake
 
-```
+```bash
 $ mkdir build
 $ cd build
 $ cmake ..
@@ -15,59 +17,17 @@ $ make
 
 This produces a dynamic callgrapher tool called
 tools/callgrapher/callgrapher and a library for printing out the
-static call graph in lib/callgraphs/callgraphs.so.
+static call graph in *lib/callgraphs/callgraphs.so*.
 
-Running the call graph printer:
-e.g.
-clang -g -c -emit-llvm ../callgrapher/test/simpletest.c -o calls.bc
-tools/callgrapher/callgrapher calls.bc
+To generate call graph for the C file located in *test/simpletest.c* you
+would do the following
 
+```bash
+$ clang -g -S -emit-llvm ../test/simpletest.c
+$ ./tools/callgrapher/callgrapher simpletest.ll | dot -Tpng > graph.png
+```
 
-## Building with Autoconf / configure
+And you will have a png that looks like the following:
 
-1. Download and build LLVM as per the standard instructions.
-  (http://llvm.org/docs/GettingStarted.html#getting-started-quickly-a-summary)
-  
-2. Reconfigure the callgrapher project to let it know where you built LLVM.
-  e.g.
-  cd autoconf
-  ./AutoRegen.sh
-  <Enter the paths to the LLVM source and build directories when asked>
-  cd ..
-
-  NOTE:
-  For Ubuntu with llvm 3.5 or later you can use e.g.:
-  /usr/lib/llvm-3.5/build/
-
-3. Create a new directory for building.
-  e.g. mkdir ../callgrapherbuild
-
-4. Change into the new directory.
-  e.g. cd ../callgrapherbuild
-
-5. Run configure from the new build directory. NOTE: You must configure the
-  project with the same debugging and assertion options as you configured LLVM.
-  That is, if you enabled LLVM debugging with
-  --disable-optimized --enable-debug-runtime --enable-assertions
-  then you should do the same for the project
-  e.g. ../callgrapher/configure --with-llvmsrc=<path to llvm src dir> --with-llvmobj=<path to llvm build dir> --disable-optimized --enable-debug-runtime --enable-assertions
-
-  Or for Ubuntu 14.10 in particular:
-  ../callgrapher/configure --with-llvmsrc=/usr/lib/llvm-3.5/build/ --with-llvmobj=/usr/lib/llvm-3.5/build/ --disable-optimized --enable-debugging
-
-6. Run make inside the build directory.
-  e.g. make
-
-This produces a callgrapher tool in a folder that depends on your
-configuration options. If you have assertions and debugging enabled, it will be
-Debug+Asserts/bin/callgrapher
-If you have assertions enabled and debugging disabled, it will be
-Release+Asserts/bin/callgrapher
-The library can similarly be found in
-Debug+Asserts/lib/ or Release+Asserts/lib/
-
-Running the call graph printer:
-e.g.
-clang -g -c -emit-llvm ../callgrapher/test/simpletest.c -o calls.bc
-Debug+Asserts/bin/callgrapher calls.bc
+![call graph for test/simpletest.c](graph.png)
 
