@@ -2,12 +2,12 @@
 #ifndef CALLGRAPH_H
 #define CALLGRAPH_H
 
+#include "llvm/IR/Function.h"
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
-
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -19,13 +19,13 @@ struct function;
 
 
 struct function {
-	char *name;
+	const char *name;
 	int weight;
 	std::vector<struct called> call_list;
 };
 
 struct called {
-	char *file;
+	const char *file;
 	int line;
 	struct function *f;
 };
@@ -33,7 +33,7 @@ struct called {
 struct WeightedCallGraphPass : public llvm::ModulePass {
 	static char ID;
 	
-	std::vector<function> function_list;
+	std::map<std::string, function *> function_list;
 
 	WeightedCallGraphPass() : ModulePass(ID)
 	{ }
@@ -47,7 +47,8 @@ struct WeightedCallGraphPass : public llvm::ModulePass {
 
   virtual void print(llvm::raw_ostream &out,
                      const llvm::Module *m) const override;
-
+  void AnalyseCallSite(llvm::CallSite &cs);
+  void Analyse(llvm::Function &f);
   virtual bool runOnModule(llvm::Module &m) override;
 };
 

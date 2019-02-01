@@ -9,6 +9,11 @@ set(PACKAGE_BUGREPORT "student@sfu.ca")
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "-std=c++1y -fno-rtti")
 
+# ASAN
+# set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+# set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+
+
 ############## LLVM CONFIGURATION #################
 
 # LLVM_DIR must be set to the prefix of /share/llvm/cmake via commandline
