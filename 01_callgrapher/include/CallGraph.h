@@ -8,6 +8,8 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
+#include "llvm/Analysis/MemoryDependenceAnalysis.h"
+
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -27,7 +29,7 @@ struct function {
 struct called {
 	const char *file;
 	int line;
-	struct function *f;
+	std::vector<struct function *> f;
 };
 
 struct WeightedCallGraphPass : public llvm::ModulePass {
@@ -42,13 +44,15 @@ struct WeightedCallGraphPass : public llvm::ModulePass {
 
   virtual void getAnalysisUsage(llvm::AnalysisUsage &au) const override {
     au.setPreservesAll();
-    //au.addRequired<llvm::DataLayout>();
+    au.addRequired<llvm::AAResultsWrapperPass>();
   }
 
   virtual void print(llvm::raw_ostream &out,
                      const llvm::Module *m) const override;
   void AnalyseCallSite(llvm::CallSite &cs);
   void Analyse(llvm::Function &f);
+  void AnalyseDirectCallSite(llvm::CallSite &cs);
+  void AnalyseIndirectCallSite(llvm::CallSite &cs);
   virtual bool runOnModule(llvm::Module &m) override;
 };
 

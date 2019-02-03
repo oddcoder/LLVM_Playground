@@ -101,6 +101,7 @@ main (int argc, char **argv, const char **env) {
 
   //TODO: You may choose to add additional passes here for things like alias
   // analysis.
+  pm.add(new AAResultsWrapperPass);
   pm.add(new callgraphs::WeightedCallGraphPass);
   pm.add(new CallGraphPrinter<callgraphs::WeightedCallGraphPass>(outs()));
   pm.run(*module);

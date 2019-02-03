@@ -3,6 +3,9 @@
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/DebugLoc.h"
+#include "llvm/Analysis/MemoryDependenceAnalysis.h"
+#include "llvm/Analysis/AliasSetTracker.h"
+
 
 #include <iterator>
 
@@ -16,19 +19,38 @@ RegisterPass<WeightedCallGraphPass> X("weightedcg",
                                 "construct a weighted call graph of a module");
 
 void WeightedCallGraphPass::AnalyseCallSite(CallSite &cs) {
+	if (cs.isIndirectCall())
+		AnalyseIndirectCallSite(cs);
+	else
+		AnalyseDirectCallSite(cs);
+}
+void WeightedCallGraphPass::AnalyseIndirectCallSite(CallSite &cs) {
+	Value *v = cs.getCalledValue();
+	Function *caller = cs.getCaller();
+	//AliasAnalysis &AA = getAnalysis<AAResultsWrapperPass>(/**caller*/).getAAResults();
+	Module *m = caller->getParent();
+	for (Function &f: *m) {
+	}
+	/*AliasSetTracker tr(AA);
+	for (BasicBlock &bb: *caller) {
+		for(Instruction &i: bb) {
+			tr.add(&i);
+		}
+	}
+	AliasSet &set = tr.getAliasSetFor(v);*/
+}
+
+void WeightedCallGraphPass::AnalyseDirectCallSite(CallSite &cs) {
 	Function *caller, *callee;
 	struct called c;
-	if(cs.isIndirectCall())
-		return;
 	caller = cs.getCaller();
 	callee = cs.getCalledFunction();
 	if (callee->isIntrinsic())
 		return;
-	//c = new struct called;
 	if (this->function_list.count(callee->getName()) == 0)
 		Analyse(*callee);
-	c.f = this->function_list[callee->getName()];
-	c.f->weight++;
+	c.f.push_back(this->function_list[callee->getName()]);
+	c.f.back()->weight++;
 	const DebugLoc debugloc = cs.getInstruction()->getDebugLoc();
 	c.line = debugloc.getLine();
 	c.file = cs.getInstruction()->getModule()->getSourceFileName().c_str();
@@ -100,11 +122,12 @@ WeightedCallGraphPass::print(raw_ostream &out, const Module *m) const {
     unsigned lineID = 0;
     //for (auto const& function: this->function_list) {
     for (auto const &callsite: func->call_list) {
-      out << "  " << func->name
-          << ":l" << lineID
-          << " -> " << callsite.f->name<< ";\n";
-      //}
-      ++lineID;
+      for (auto const callee: callsite.f) {
+	out << "  " << func->name
+            << ":l" << lineID
+            << " -> " << callee->name<< ";\n";
+	++lineID;
+      }
     }
   }
 
