@@ -15,7 +15,7 @@
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Passes/PassBuilder.h"
 
 #include <memory>
 #include <string>
@@ -38,37 +38,10 @@ unique_ptr<T> make_unique(Args&&... args) {
 
 namespace {
 
-
 cl::opt<string>
 inPath(cl::Positional,
        cl::desc("<Module to analyze>"),
        cl::value_desc("bitcode filename"), cl::Required);
-
-
-template<typename T>
-struct CallGraphPrinter : public ModulePass {
-  static char ID;
-  raw_ostream &out;
-
-  CallGraphPrinter(raw_ostream &out)
-    : ModulePass(ID), out(out)
-      { }
-
-  virtual bool runOnModule(Module &m) {
-    getAnalysis<T>().print(out, &m);
-    return false;
-  }
-
-  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-    AU.addRequired<T>();
-    AU.setPreservesAll();
-  }
-};
-
-template<typename T>
-char CallGraphPrinter<T>::ID = 0;
-
-
 }
 
 
@@ -86,7 +59,6 @@ main (int argc, char **argv, const char **env) {
   LLVMContext &context = MainContext;
   SMDiagnostic err;
   unique_ptr<Module> module;
-  //module.reset(parseIRFile(inPath.getValue(), err, context));
   module = parseIRFile(inPath.getValue(), err, context);
 
   if (!module.get()) {
@@ -96,16 +68,17 @@ main (int argc, char **argv, const char **env) {
   }
 
   // Build up all of the passes that we want to run on the module.
-  legacy::PassManager pm;
-  //pm.add(*module.get());
+  PassBuilder PB;
+  ModulePassManager MPM(true);
+  LoopAnalysisManager LAM(false);
+  FunctionAnalysisManager FAM(true);
+  CGSCCAnalysisManager CAM(false);
+  ModuleAnalysisManager MAM(false);
 
-  //TODO: You may choose to add additional passes here for things like alias
-  // analysis.
-  pm.add(new AAResultsWrapperPass);
-  pm.add(new callgraphs::WeightedCallGraphPass);
-  pm.add(new CallGraphPrinter<callgraphs::WeightedCallGraphPass>(outs()));
-  pm.run(*module);
-
+  FAM.registerPass([&] {return AAManager();});
+  MAM.registerPass([&] {return callgraphs::WeightedCallGraph();});
+  callgraphs::WeightedCallGraphPrinter Printer(outs());
+  Printer.run(*module, MAM);
   return 0;
 }
 

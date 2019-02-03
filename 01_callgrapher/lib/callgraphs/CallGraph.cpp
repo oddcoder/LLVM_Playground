@@ -5,7 +5,9 @@
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 #include "llvm/Analysis/AliasSetTracker.h"
-
+#include "llvm/Passes/PassPlugin.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
 
 #include <iterator>
 
@@ -13,18 +15,18 @@ using namespace llvm;
 using namespace callgraphs;
 
 
-char WeightedCallGraphPass::ID = 0;
-
-RegisterPass<WeightedCallGraphPass> X("weightedcg",
+/*RegisterPass<LegacyWeightedCallGraphPass> X("weightedcg",
                                 "construct a weighted call graph of a module");
-
-void WeightedCallGraphPass::AnalyseCallSite(CallSite &cs) {
+*/
+AnalysisKey WeightedCallGraph::Key;
+AnalysisKey WeightedCallGraphPrinter::Key;
+void WeightedCallGraphInfo::AnalyseCallSite(CallSite &cs) {
 	if (cs.isIndirectCall())
 		AnalyseIndirectCallSite(cs);
 	else
 		AnalyseDirectCallSite(cs);
 }
-void WeightedCallGraphPass::AnalyseIndirectCallSite(CallSite &cs) {
+void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs) {
 	Value *v = cs.getCalledValue();
 	Function *caller = cs.getCaller();
 	//AliasAnalysis &AA = getAnalysis<AAResultsWrapperPass>(/**caller*/).getAAResults();
@@ -40,7 +42,7 @@ void WeightedCallGraphPass::AnalyseIndirectCallSite(CallSite &cs) {
 	AliasSet &set = tr.getAliasSetFor(v);*/
 }
 
-void WeightedCallGraphPass::AnalyseDirectCallSite(CallSite &cs) {
+void WeightedCallGraphInfo::AnalyseDirectCallSite(CallSite &cs) {
 	Function *caller, *callee;
 	struct called c;
 	caller = cs.getCaller();
@@ -61,7 +63,7 @@ void WeightedCallGraphPass::AnalyseDirectCallSite(CallSite &cs) {
 // At this point we assume that all we know is that we
 // never encounter this function before.
 // no more assumptions
-void WeightedCallGraphPass::Analyse(Function &f) {
+void WeightedCallGraphInfo::Analyse(Function &f) {
 	struct function *fun;
 	if (f.isIntrinsic())
 		return;
@@ -84,19 +86,17 @@ void WeightedCallGraphPass::Analyse(Function &f) {
 // For an analysis pass, runOnModule should perform the actual analysis and
 // compute the call graph. The actual output, however, is produced separately
 // by the print function.
-bool
-WeightedCallGraphPass::runOnModule(Module &m) {
+void WeightedCallGraphInfo::Analyse(Module &m) {
 
   for (Function &fun : m){
     if (this->function_list.count(fun.getName()) == 0)
 	    Analyse(fun);
   }
-  return false;
 }
 
 
 void
-WeightedCallGraphPass::print(raw_ostream &out, const Module *m) const {
+WeightedCallGraphInfo::print(raw_ostream &out) const {
   out << "digraph {\n  node [shape=record];\n";
 
   // Print out all function nodes
@@ -132,5 +132,40 @@ WeightedCallGraphPass::print(raw_ostream &out, const Module *m) const {
   }
 
   out << "}\n";
+}
+
+struct WeightedCallGraphInfo WeightedCallGraph::run(Module &M,
+		ModuleAnalysisManager &AM) {
+	struct WeightedCallGraphInfo Result;
+	Result.Analyse(M);
+	return Result;
+}
+
+PreservedAnalyses WeightedCallGraphPrinter::run(Module &M,
+						ModuleAnalysisManager &AM) {
+	AM.getResult<WeightedCallGraph>(M).print(OS);
+	return PreservedAnalyses::all();
+}
+
+
+
+void registerCallbacks(PassBuilder &PB) {
+  PB.registerAnalysisRegistrationCallback(
+      [&](ModuleAnalysisManager &MAM) {
+	MAM.registerPass([&] {return WeightedCallGraph();});
+	MAM.registerPass([&] {return WeightedCallGraphPrinter(outs());});
+	return true;
+      });
+}
+
+
+extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
+llvmGetPassPluginInfo() {
+	return {
+		LLVM_PLUGIN_API_VERSION,
+		"WeightedCallGraphInfo",
+		"v0.1",
+		registerCallbacks
+	};
 }
 

@@ -8,7 +8,7 @@ add_executable(callgrapher
 
 llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES
         asmparser core linker bitreader irreader ipo
-        analysis support)
+        analysis support Passes)
 
 target_link_libraries(callgrapher callgraphs ${REQ_LLVM_LIBRARIES})
 
