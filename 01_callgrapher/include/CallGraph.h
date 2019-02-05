@@ -47,7 +47,6 @@ struct WeightedCallGraph: public llvm::AnalysisInfoMixin<WeightedCallGraph> {
 
 struct WeightedCallGraphPrinter:public
 			llvm::PassInfoMixin<WeightedCallGraphPrinter> {
-	//static llvm::AnalysisKey Key;
 
 	llvm::raw_ostream &OS;
 	using Result = llvm::PreservedAnalyses;

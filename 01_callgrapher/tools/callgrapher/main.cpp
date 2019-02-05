@@ -16,6 +16,7 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Support/ErrorHandling.h"
 
 #include <memory>
 #include <string>
@@ -77,7 +78,10 @@ main (int argc, char **argv, const char **env) {
   CGSCCAnalysisManager CAM(false);
   ModuleAnalysisManager MAM(true);
 
-  FAM.registerPass([&] {return AAManager();});
+  AAManager AA ;//= PB.buildDefaultAAPipeline();
+  if (auto Err = PB.parseAAPipeline(AA, "basicaa"))
+    report_fatal_error("Error parsing basicaa AA pipeline");
+  FAM.registerPass([&] {return std::move(AA);});
   MAM.registerPass([&] {return callgraphs::WeightedCallGraph();});
 
   PB.registerModuleAnalyses(MAM);

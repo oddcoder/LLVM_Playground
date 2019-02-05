@@ -8,7 +8,7 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
-
+#include "llvm/Analysis/MemoryLocation.h"
 #include <iterator>
 
 using namespace llvm;
@@ -29,19 +29,25 @@ void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs, ModuleAnalysis
 	Value *v = cs.getCalledValue();
 	Function &caller = *cs.getCaller();
 	Module &M = *caller.getParent();
+	struct called c;
 	FunctionAnalysisManager &FAM =  MAM.
 		getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
 	AliasAnalysis &AA = FAM.getResult<AAManager>(caller);
-	//AliasAnalysis &AA = getAnalysis<AAResultsWrapperPass>(/**caller*/).getAAResults();
 	for (Function &f: M) {
-	}
-	/*AliasSetTracker tr(AA);
-	for (BasicBlock &bb: *caller) {
-		for(Instruction &i: bb) {
-			tr.add(&i);
+		if (f.isIntrinsic())
+			continue;
+		AliasResult R = AA.alias(v, 1, &f, 1);
+		if (R == AliasResult::MustAlias){
+			if (this->function_list.count(f.getName()) == 0)
+				Analyse(f, MAM);
+			c.f.push_back(this->function_list[f.getName()]);
+			c.f.back()->weight++;
 		}
 	}
-	AliasSet &set = tr.getAliasSetFor(v);*/
+	const DebugLoc debugloc = cs.getInstruction()->getDebugLoc();
+	c.line = debugloc.getLine();
+	c.file = cs.getInstruction()->getModule()->getSourceFileName().c_str();
+	this->function_list[caller.getName()]->call_list.push_back(c);
 }
 
 void WeightedCallGraphInfo::AnalyseDirectCallSite(CallSite &cs,
@@ -129,8 +135,8 @@ WeightedCallGraphInfo::print(raw_ostream &out) const {
 	out << "  " << func->name
             << ":l" << lineID
             << " -> " << callee->name<< ";\n";
-	++lineID;
       }
+      ++lineID;
     }
   }
 
