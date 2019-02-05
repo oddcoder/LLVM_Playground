@@ -28,12 +28,12 @@ struct called {
 struct WeightedCallGraphInfo {
 	std::map<std::string, function *> function_list;
 	void print(llvm::raw_ostream &out) const;
-	void Analyse(llvm::Module &m);
+	void Analyse(llvm::Module &m, llvm::ModuleAnalysisManager &MAM);
 private:
-	void AnalyseCallSite(llvm::CallSite &cs);
-	void Analyse(llvm::Function &f);
-	void AnalyseDirectCallSite(llvm::CallSite &cs);
-	void AnalyseIndirectCallSite(llvm::CallSite &cs);
+	void AnalyseCallSite(llvm::CallSite &cs, llvm::ModuleAnalysisManager &MAM);
+	void Analyse(llvm::Function &f, llvm::ModuleAnalysisManager &MAM);
+	void AnalyseDirectCallSite(llvm::CallSite &cs, llvm::ModuleAnalysisManager &MAM);
+	void AnalyseIndirectCallSite(llvm::CallSite &cs, llvm::ModuleAnalysisManager &MAM);
 
 };
 
@@ -46,8 +46,8 @@ struct WeightedCallGraph: public llvm::AnalysisInfoMixin<WeightedCallGraph> {
 };
 
 struct WeightedCallGraphPrinter:public
-			llvm::AnalysisInfoMixin<WeightedCallGraphPrinter> {
-	static llvm::AnalysisKey Key;
+			llvm::PassInfoMixin<WeightedCallGraphPrinter> {
+	//static llvm::AnalysisKey Key;
 
 	llvm::raw_ostream &OS;
 	using Result = llvm::PreservedAnalyses;

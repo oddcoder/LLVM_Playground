@@ -19,19 +19,21 @@ using namespace callgraphs;
                                 "construct a weighted call graph of a module");
 */
 AnalysisKey WeightedCallGraph::Key;
-AnalysisKey WeightedCallGraphPrinter::Key;
-void WeightedCallGraphInfo::AnalyseCallSite(CallSite &cs) {
+void WeightedCallGraphInfo::AnalyseCallSite(CallSite &cs, ModuleAnalysisManager &MAM) {
 	if (cs.isIndirectCall())
-		AnalyseIndirectCallSite(cs);
+		AnalyseIndirectCallSite(cs, MAM);
 	else
-		AnalyseDirectCallSite(cs);
+		AnalyseDirectCallSite(cs, MAM);
 }
-void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs) {
+void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs, ModuleAnalysisManager &MAM) {
 	Value *v = cs.getCalledValue();
-	Function *caller = cs.getCaller();
+	Function &caller = *cs.getCaller();
+	Module &M = *caller.getParent();
+	FunctionAnalysisManager &FAM =  MAM.
+		getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
+	AliasAnalysis &AA = FAM.getResult<AAManager>(caller);
 	//AliasAnalysis &AA = getAnalysis<AAResultsWrapperPass>(/**caller*/).getAAResults();
-	Module *m = caller->getParent();
-	for (Function &f: *m) {
+	for (Function &f: M) {
 	}
 	/*AliasSetTracker tr(AA);
 	for (BasicBlock &bb: *caller) {
@@ -42,7 +44,8 @@ void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs) {
 	AliasSet &set = tr.getAliasSetFor(v);*/
 }
 
-void WeightedCallGraphInfo::AnalyseDirectCallSite(CallSite &cs) {
+void WeightedCallGraphInfo::AnalyseDirectCallSite(CallSite &cs,
+		ModuleAnalysisManager &MAM) {
 	Function *caller, *callee;
 	struct called c;
 	caller = cs.getCaller();
@@ -50,7 +53,7 @@ void WeightedCallGraphInfo::AnalyseDirectCallSite(CallSite &cs) {
 	if (callee->isIntrinsic())
 		return;
 	if (this->function_list.count(callee->getName()) == 0)
-		Analyse(*callee);
+		Analyse(*callee, MAM);
 	c.f.push_back(this->function_list[callee->getName()]);
 	c.f.back()->weight++;
 	const DebugLoc debugloc = cs.getInstruction()->getDebugLoc();
@@ -63,7 +66,7 @@ void WeightedCallGraphInfo::AnalyseDirectCallSite(CallSite &cs) {
 // At this point we assume that all we know is that we
 // never encounter this function before.
 // no more assumptions
-void WeightedCallGraphInfo::Analyse(Function &f) {
+void WeightedCallGraphInfo::Analyse(Function &f, ModuleAnalysisManager &MAM) {
 	struct function *fun;
 	if (f.isIntrinsic())
 		return;
@@ -76,7 +79,7 @@ void WeightedCallGraphInfo::Analyse(Function &f) {
 			CallSite cs(&i);
 			if (!cs.getInstruction())
 				continue;
-			AnalyseCallSite(cs);
+			AnalyseCallSite(cs, MAM);
 
 		}
 	}
@@ -86,11 +89,11 @@ void WeightedCallGraphInfo::Analyse(Function &f) {
 // For an analysis pass, runOnModule should perform the actual analysis and
 // compute the call graph. The actual output, however, is produced separately
 // by the print function.
-void WeightedCallGraphInfo::Analyse(Module &m) {
+void WeightedCallGraphInfo::Analyse(Module &m, ModuleAnalysisManager &MAM) {
 
   for (Function &fun : m){
     if (this->function_list.count(fun.getName()) == 0)
-	    Analyse(fun);
+	    Analyse(fun, MAM);
   }
 }
 
@@ -135,9 +138,9 @@ WeightedCallGraphInfo::print(raw_ostream &out) const {
 }
 
 struct WeightedCallGraphInfo WeightedCallGraph::run(Module &M,
-		ModuleAnalysisManager &AM) {
+		ModuleAnalysisManager &MAM) {
 	struct WeightedCallGraphInfo Result;
-	Result.Analyse(M);
+	Result.Analyse(M, MAM);
 	return Result;
 }
 
@@ -147,15 +150,22 @@ PreservedAnalyses WeightedCallGraphPrinter::run(Module &M,
 	return PreservedAnalyses::all();
 }
 
-
-
 void registerCallbacks(PassBuilder &PB) {
   PB.registerAnalysisRegistrationCallback(
       [&](ModuleAnalysisManager &MAM) {
 	MAM.registerPass([&] {return WeightedCallGraph();});
-	MAM.registerPass([&] {return WeightedCallGraphPrinter(outs());});
+	//MAM.registerPass([&] {return WeightedCallGraphPrinter(outs());});
 	return true;
       });
+  PB.registerPipelineParsingCallback(
+    [](StringRef Name, ModulePassManager &MPM,
+       ArrayRef<PassBuilder::PipelineElement>) {
+      if(Name == "weighted-callgraph-printer"){
+        MPM.addPass(WeightedCallGraphPrinter(outs()));
+	return true;
+      }
+      return false;
+    });
 }
 
 

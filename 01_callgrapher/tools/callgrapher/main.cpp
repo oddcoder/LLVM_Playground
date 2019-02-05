@@ -69,16 +69,27 @@ main (int argc, char **argv, const char **env) {
 
   // Build up all of the passes that we want to run on the module.
   PassBuilder PB;
+
   ModulePassManager MPM(true);
+  
   LoopAnalysisManager LAM(false);
   FunctionAnalysisManager FAM(true);
   CGSCCAnalysisManager CAM(false);
-  ModuleAnalysisManager MAM(false);
+  ModuleAnalysisManager MAM(true);
 
   FAM.registerPass([&] {return AAManager();});
   MAM.registerPass([&] {return callgraphs::WeightedCallGraph();});
-  callgraphs::WeightedCallGraphPrinter Printer(outs());
-  Printer.run(*module, MAM);
+
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CAM, MAM);
+
+  MPM.addPass(callgraphs::WeightedCallGraphPrinter(outs()));
+  MPM.run(*module, MAM);
+  //callgraphs::WeightedCallGraphPrinter Printer(outs());
+  //Printer.run(*module, MAM);
   return 0;
 }
 
