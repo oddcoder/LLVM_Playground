@@ -30,7 +30,7 @@ $ make
 ```
 
 
-## Example Output
+## Example
 
 ```C
 void foo(void);
