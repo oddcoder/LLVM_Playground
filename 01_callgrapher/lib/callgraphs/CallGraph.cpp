@@ -14,10 +14,44 @@
 using namespace llvm;
 using namespace callgraphs;
 
+bool compatiablefunctiontypes(Type &f1, Type &f2) {
+	Type *min;
+	if (f1.getFunctionNumParams() > f2.getFunctionNumParams())
+		min = &f2;
+	else
+		min = &f1;
+	if (min->isFunctionVarArg())
+		return true;
+	return false;
+}
 
-/*RegisterPass<LegacyWeightedCallGraphPass> X("weightedcg",
-                                "construct a weighted call graph of a module");
-*/
+bool aresametypes(Type &a1, Type &a2) {
+	//This barely checks the that both return types have the same ID
+	a1.dump();
+	a2.dump();
+	if (a1.getTypeID() != a2.getTypeID())
+		return false;
+	return true;
+}
+bool arethesamefunctiontype(FunctionType &f1, FunctionType &f2) {
+	//This is adhoc analysis!
+	//first check the argument numbers including varargs ....
+	//the function with less arguments must be variable argument function
+	//otherwise they can never be alias
+	f1.dump();
+	f2.dump();
+	if( f1.getFunctionNumParams() != f2.getFunctionNumParams()) {
+		if (!compatiablefunctiontypes(f1,f2))
+			return false;
+	}
+	if(!aresametypes(*f1.getReturnType(), *f2.getReturnType()))
+			return false;
+	for (int i = 0; i < std::min(f1.getFunctionNumParams(), f2.getFunctionNumParams()); i++)
+		if(!aresametypes(*f1.getFunctionParamType(i), *f2.getFunctionParamType(i)))
+			return false;
+	return true;
+}
+
 AnalysisKey WeightedCallGraph::Key;
 void WeightedCallGraphInfo::AnalyseCallSite(CallSite &cs, ModuleAnalysisManager &MAM) {
 	if (cs.isIndirectCall())
@@ -27,6 +61,8 @@ void WeightedCallGraphInfo::AnalyseCallSite(CallSite &cs, ModuleAnalysisManager 
 }
 void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs, ModuleAnalysisManager &MAM) {
 	Value *v = cs.getCalledValue();
+	errs() << v->getName() << " : ";
+	Type *call_type = v->getType()->getContainedType(0);
 	Function &caller = *cs.getCaller();
 	Module &M = *caller.getParent();
 	struct called c;
@@ -36,8 +72,11 @@ void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs, ModuleAnalysis
 	for (Function &f: M) {
 		if (f.isIntrinsic())
 			continue;
+		Type *f_type = f.getType()->getContainedType(0);
 		AliasResult R = AA.alias(v, &f);
-		if (R == AliasResult::MustAlias){
+		//if (R == AliasResult::MustAlias){
+		if (arethesamefunctiontype((FunctionType &) *f_type,
+					(FunctionType &)*call_type)) {
 			if (this->function_list.count(f.getName()) == 0)
 				Analyse(f, MAM);
 			c.f.push_back(this->function_list[f.getName()]);
