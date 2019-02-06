@@ -36,7 +36,7 @@ void WeightedCallGraphInfo::AnalyseIndirectCallSite(CallSite &cs, ModuleAnalysis
 	for (Function &f: M) {
 		if (f.isIntrinsic())
 			continue;
-		AliasResult R = AA.alias(v, 1, &f, 1);
+		AliasResult R = AA.alias(v, &f);
 		if (R == AliasResult::MustAlias){
 			if (this->function_list.count(f.getName()) == 0)
 				Analyse(f, MAM);
