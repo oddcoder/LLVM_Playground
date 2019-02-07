@@ -76,10 +76,11 @@ The code above generates graph that looks like this
 
 ## Function Pointers
 
-I used a dump way that compares function signatures. It checks the following:
+Function Pointers are resolved in using type checking heurestics: a function
+would be said candidate pointee by a function pointer if both functions:- 
 
-- Number of Arguments.
-- Class of return types (`LLVM::TypeID`)
-- Class of arguments types (`LLVM::TypeID`)
-
-
+- Have same return types
+- Either Have same number of arguments, or the one with less arguments is a
+  funciton with variable number of arguments.
+- All the defined arguments must be of the same type (equivalent types (structs)
+  are not considered the same).
