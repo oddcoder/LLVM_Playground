@@ -79,7 +79,7 @@ The code above generates graph that looks like this
 Function Pointers are resolved in using type checking heurestics: a function
 would be said candidate pointee by a function pointer if both functions:- 
 
-- Have same return types
+- Have same return types.
 - Either Have same number of arguments, or the one with less arguments is a
   funciton with variable number of arguments.
 - All the defined arguments must be of the same type (equivalent types (structs)
