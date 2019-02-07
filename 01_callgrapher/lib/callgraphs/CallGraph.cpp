@@ -26,20 +26,15 @@ bool compatiablefunctiontypes(Type &f1, Type &f2) {
 }
 
 bool aresametypes(Type &a1, Type &a2) {
-	//This barely checks the that both return types have the same ID
-	a1.dump();
-	a2.dump();
-	if (a1.getTypeID() != a2.getTypeID())
-		return false;
-	return true;
+	// types are usually made by the LLVMContext, and it avoids making two
+	// different-but-equal types.
+	if (&a1 == &a1)
+		return true;
+	return false;
 }
 bool arethesamefunctiontype(FunctionType &f1, FunctionType &f2) {
-	//This is adhoc analysis!
-	//first check the argument numbers including varargs ....
-	//the function with less arguments must be variable argument function
-	//otherwise they can never be alias
-	f1.dump();
-	f2.dump();
+	if (&f1 == &f2)
+		return true;
 	if( f1.getFunctionNumParams() != f2.getFunctionNumParams()) {
 		if (!compatiablefunctiontypes(f1,f2))
 			return false;
