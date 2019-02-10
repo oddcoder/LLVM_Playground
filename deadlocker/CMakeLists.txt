@@ -1,10 +1,9 @@
 project(deadlocker)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
 
-set(PACKAGE_NAME deadlocktemplate)
+set(PACKAGE_NAME deadlocker)
 set(PACKAGE_VERSION 0.1)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
-set(PACKAGE_BUGREPORT "student@sfu.ca")
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "-std=c++1y -fno-rtti")
@@ -17,7 +16,10 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 # We incorporate the CMake features provided by LLVM:
+list(APPEND CMAKE_PREFIX_PATH "${LLVM_DIR}/share/llvm/cmake")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+
+include(HandleLLVMOptions)
 include(AddLLVM)
 
 option(LLVM_ENABLE_CXX11  "Enable C++11" ON)
@@ -30,10 +32,13 @@ message("LLVM STATUS:
   Includes    ${LLVM_INCLUDE_DIRS}
   Libraries   ${LLVM_LIBRARY_DIRS}
   Targets     ${LLVM_TARGETS_TO_BUILD}")
+
 # Now set the LLVM header and library paths:
 include_directories( ${LLVM_INCLUDE_DIRS} )
 link_directories( ${LLVM_LIBRARY_DIRS} )
 add_definitions( ${LLVM_DEFINITIONS} )
+set(LLVM_RUNTIME_OUTPUT_INTDIR "${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INT_DIR}")
+set(LLVM_LIBRARY_OUTPUT_INTDIR "${CMAKE_BINARY_DIR}/lib/${CMAKE_CFG_INT_DIR}")
 
 ############## FINAL PROJECT CONFIG #################
 
