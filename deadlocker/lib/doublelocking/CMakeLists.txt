@@ -1,0 +1,3 @@
+add_library(DoubleLocking DoubleLocking.cpp)
+
+add_llvm_loadable_module(DoubleLocking_plugin DoubleLocking.cpp)

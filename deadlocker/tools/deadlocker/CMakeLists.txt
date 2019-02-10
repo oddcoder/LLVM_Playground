@@ -3,7 +3,6 @@ set(LLVM_USED_LIBS callgraphs)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(deadlocker
-  DoubleLockingPass.cpp
   main.cpp
   )
 
