@@ -9,7 +9,8 @@
 #include "llvm/Pass.h"
 #include "numeric"
 #include "CallGraph.h"
-
+#include <unordered_map>
+#include <unordered_set>
 
 enum class ErrorKind {
   DOUBLE_LOCK,

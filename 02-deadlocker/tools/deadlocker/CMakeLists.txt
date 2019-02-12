@@ -8,9 +8,9 @@ add_executable(deadlocker
 
 llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES
         asmparser core linker bitreader irreader ipo
-        analysis support)
+        analysis support Passes)
 
-target_link_libraries(deadlocker callgraphs ${REQ_LLVM_LIBRARIES})
+target_link_libraries(deadlocker DoubleLocking  callgraphs ${REQ_LLVM_LIBRARIES})
 
 # Platform dependencies.
 if( WIN32 )
