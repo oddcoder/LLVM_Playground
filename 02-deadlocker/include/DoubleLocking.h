@@ -36,15 +36,11 @@ struct ContextHash {
 };
 
 
-struct DoubleLocking : public llvm::AnalysisInfoMixin<WeightedCallGraph> {
-	friend AnalysisInfoMixin<WeightedCallGraph>;
+struct DoubleLocking : public llvm::AnalysisInfoMixin<DoubleLocking> {
+	friend AnalysisInfoMixin<DoubleLocking>;
 	static llvm::AnalysisKey Key;
-	callgraphs::WeightedCallGraphInfo *cgPass;
 	std::unordered_map<llvm::Instruction*,ErrorKind> errors;
-	DoubleLockingPass() : ModulePass{ID}, cgPass{nullptr}
-	{
-	}
-	using result = std::unordered_map<llvm::Instruction*,ErrorKind>;
+	using Result = std::unordered_map<llvm::Instruction*,ErrorKind>;
 	Result run(llvm::Module &M, llvm::ModuleAnalysisManager &AM);
 };
 /*
@@ -62,7 +58,7 @@ struct DoubleLocking : public llvm::AnalysisInfoMixin<WeightedCallGraph> {
 };
 */
 struct DoubleLockingPrinter:public
-                        llvm::PassInfoMixin<WeightedCallGraphPrinter> {
+			    llvm::PassInfoMixin<DoubleLockingPrinter> {
 
         llvm::raw_ostream &OS;
         using Result = llvm::PreservedAnalyses;
