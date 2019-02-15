@@ -34,7 +34,10 @@ $ make
 ## Usage
 
 ```
-$ clang -g -emit-llvm -O2 -mllvm -disable-llvm-optzns -S [target_file.c] -o - | $(OPT) -mem2reg -S -o [target_file.ll]
+$ clang -g -emit-llvm -O2 -mllvm -disable-llvm-optzns -S [target_file.c] -o - | opt -mem2reg -S -o [target_file.ll]
 $ deadlocker [target_file.ll]
-``
+```
 
+## Example
+
+[![asciicast](https://asciinema.org/a/6RWiDTSIIbZgVIX9AD9bHqOJ2.svg)](https://asciinema.org/a/6RWiDTSIIbZgVIX9AD9bHqOJ2)
