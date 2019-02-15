@@ -24,10 +24,15 @@ TXT_FILES    := $(addprefix txt/,$(notdir $(ASM_FILES:.ll=.txt)))
 BINARIES     := $(addprefix bin/,$(notdir $(ASM_FILES:.ll=)))
 
 
-all: $(TXT_FILES)
+all: DIRS $(TXT_FILES)
+	more txt/* | cat
 llvmasm: $(ASM_FILES)
 analyze: $(TXT_FILES)
 bin: $(BINARIES)
+
+DIRS:
+	@mkdir -p ll
+	@mkdir -p txt
 
 
 ll/%.ll: c/%.c
@@ -40,8 +45,4 @@ bin/%: ll/%.ll
 	$(CLANG) -g $< -o $@ -pthreads
 
 clean:
-	$(RM) -f $(BINARIES) $(TXT_FILES)
-
-veryclean: clean
-	$(RM) -f $(ASM_FILES)
-
+	$(RM) -rf ll/ txt/
