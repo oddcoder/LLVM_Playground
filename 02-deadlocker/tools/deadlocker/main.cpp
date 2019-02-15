@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 
-#include "CallGraph.h"
 #include "DoubleLocking.h"
 
 
@@ -72,7 +71,6 @@ main (int argc, char **argv, const char **env) {
   if (auto Err =PB.parseAAPipeline(AA, "basicaa cfl-anders-aa"))
     report_fatal_error("Error parsing basicaa AA pipeline");
   FAM.registerPass([&] {return std::move(AA);});
-  MAM.registerPass([&] {return callgraphs::WeightedCallGraph();});
   MAM.registerPass([&] {return DoubleLocking();});
 
   PB.registerModuleAnalyses(MAM);

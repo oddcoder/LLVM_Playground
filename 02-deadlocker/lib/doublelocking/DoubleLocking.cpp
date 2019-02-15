@@ -19,11 +19,9 @@
 #include <queue>
 #include <vector>
 
-#include "CallGraph.h"
 #include "DoubleLocking.h"
 
 
-using namespace callgraphs;
 using namespace llvm;
 
 enum MutexState {
@@ -155,7 +153,6 @@ Value *ArgumentTracer::resolve (Value *v, AAResults &AA) {
 class DataFlow {
 	int maxDepth;
 	ArgumentTracer arguments;
-	WeightedCallGraphInfo *cfg;
 	AbstractStateMap state;
 	FunctionAnalysisManager *FAM;
 	void transfer(AbstractStateBB *state, Instruction *i);
@@ -167,9 +164,8 @@ class DataFlow {
 
 	public:
 	std::unordered_map<llvm::Instruction*,ErrorKind> error;
-	DataFlow(WeightedCallGraphInfo *cfg, FunctionAnalysisManager *F ,int i) {
+	DataFlow(FunctionAnalysisManager *F ,int i) {
 		maxDepth = i;
-		cfg = cfg;
 		FAM = F;
 	}
 	void computeMutexState(Function *f);
@@ -323,11 +319,10 @@ std::unordered_map<llvm::Instruction*,ErrorKind>
 	DoubleLocking::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
   auto *mainFunction = M.getFunction("main");
   assert(mainFunction && "Unable to find main function");
-  WeightedCallGraphInfo &cfg = AM.getResult<WeightedCallGraph>(M);
-    FunctionAnalysisManager &FAM =
+  FunctionAnalysisManager &FAM =
       AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
     
-  DataFlow d = DataFlow(&cfg, &FAM, 20);
+  DataFlow d = DataFlow(&FAM, 20);
   d.computeMutexState(mainFunction);
   return d.error;
 
