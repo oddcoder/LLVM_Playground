@@ -91,18 +91,32 @@ bool same_after(AbstractStateBB *a, AbstractStateBB *b) {
 }
 struct ArgumentMetadata {
 	std::unordered_map<Value *, Value *> subs;
-	AbstractStateBB *callerState; // the basic block where calling happened;
+	AbstractStateBB *callerState=NULL;
+	AbstractStateBB *retState=NULL;
 };
 class ArgumentTracer : public std::vector<ArgumentMetadata> {
 	public:
 	void pushCallSite(CallSite *cs, AbstractStateBB *callerstate);
 	Value *resolve (Value *v, AAResults &AA);
 	AbstractStateBB *getCallerState();
+	void ret(AbstractStateBB *retState);
+	AbstractStateBB *pop();
 };
 
 AbstractStateBB *ArgumentTracer::getCallerState() {
 	return this->back().callerState;
 }
+AbstractStateBB *ArgumentTracer::pop() {
+	ArgumentMetadata M = this->back();
+	this->pop_back();
+	return M.retState;
+}
+
+void ArgumentTracer::ret(AbstractStateBB *retState) {
+	this->back().retState = retState;
+}
+
+
 void ArgumentTracer::pushCallSite(CallSite *cs, AbstractStateBB *callerState) {
 	auto fun = cs->getCalledFunction();
 	ArgumentMetadata M;
@@ -235,7 +249,13 @@ void DataFlow::transfer(AbstractStateBB *state, Instruction *i) {
 	} else if (!fun->isIntrinsic()) {
 		this->arguments.pushCallSite(&cs, state);
 		computeMutexState(fun);
-		this->arguments.pop_back();
+		AbstractStateBB *ret = this->arguments.pop();
+		if(ret) for (auto kv: *state) {
+			if (ret->count(kv.first) != 0) {
+				(*state)[kv.first].after =
+					(*ret)[kv.first].after;
+			}
+		}
 	}
 	if (e != ErrorKind::NO_ERROR) {
 		this->error[i] = e;
@@ -250,8 +270,7 @@ void DataFlow::computeMutexState(Function *f) {
 		this->state[&bb] = new AbstractStateBB();
 		workList.push(&bb);
 	}
-	// XXX we may need to meet between first basicblock and the one that
-	// called it if the call stack is nonempty
+	
 	while(!workList.empty()) {
 		auto bb = workList.front();
 		workList.pop();
@@ -275,10 +294,27 @@ void DataFlow::computeMutexState(Function *f) {
 		if(same_after(oldState, newState)) {
 			delete newState;
 			continue;
+		} else {
+			this->state[bb] = newState;
+			delete oldState;
 		}
 		for (auto s : llvm::successors(bb)) {
 			workList.push(s);
 		}
+	}
+	AbstractStateBB *retState = new AbstractStateBB();
+	
+	if (this->arguments.size() != 0) {
+		for (auto &bb: *f) {
+			Instruction *i = bb.getTerminator();
+			if (ReturnInst *ri = dyn_cast<ReturnInst>(i)) {
+				meet(retState, this->state[&bb]);
+			}
+		}
+		for(auto kv: *retState){
+			(*retState)[kv.first].after = (*retState)[kv.first].before;
+		}
+		arguments.ret(retState);
 	}
 	return;
 }
@@ -291,7 +327,7 @@ std::unordered_map<llvm::Instruction*,ErrorKind>
     FunctionAnalysisManager &FAM =
       AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
     
-  DataFlow d = DataFlow(&cfg, &FAM, 2);
+  DataFlow d = DataFlow(&cfg, &FAM, 20);
   d.computeMutexState(mainFunction);
   return d.error;
 
