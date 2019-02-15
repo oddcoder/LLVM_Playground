@@ -11,6 +11,9 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Pass.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Passes/PassPlugin.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
 
 #include <deque>
 #include <iterator>
@@ -381,5 +384,34 @@ DoubleLockingPrinter::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
 		OS << "No errors detected\n";
 	}
 	OS.resetColor();
+}
+
+
+void registerCallbacks(PassBuilder &PB) {
+  PB.registerAnalysisRegistrationCallback(
+      [&](ModuleAnalysisManager &MAM) {
+        MAM.registerPass([&] {return DoubleLocking();});
+        return true;
+      });
+  PB.registerPipelineParsingCallback(
+    [](StringRef Name, ModulePassManager &MPM,
+       ArrayRef<PassBuilder::PipelineElement>) {
+      if(Name == "double-locking-printer"){
+        MPM.addPass(DoubleLockingPrinter(outs()));
+        return true;
+      }
+      return false;
+    });
+}
+
+
+extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
+llvmGetPassPluginInfo() {
+        return {
+                LLVM_PLUGIN_API_VERSION,
+                "DoubleLockingDetector",
+                "v0.1",
+                registerCallbacks
+        };
 }
 
