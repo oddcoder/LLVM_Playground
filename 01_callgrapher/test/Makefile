@@ -29,11 +29,15 @@ GV_FILES     := $(addprefix gv/,$(notdir $(ASM_FILES:.ll=.gv)))
 PICTURES     := $(addprefix img/,$(notdir $(GV_FILES:.gv=.png)))
 
 
-all: $(PICTURES)
+all: DIRS $(PICTURES)
 llvmasm: $(ASM_FILES)
 graphviz: $(GV_FILES)
 pictures: $(PICTURES)
 
+DIRS:
+	@mkdir -p ll
+	@mkdir -p gv
+	@mkdir -p img
 
 ll/%.ll: c/%.c
 	$(CLANG) -g -emit-llvm -S $< -o - | $(OPT) -mem2reg -S -o $@
@@ -45,8 +49,4 @@ img/%.png: gv/%.gv
 	$(DOT) -Tpng $< -o $@
 
 clean:
-	$(RM) -f $(PICTURES) $(GV_FILES)
-
-veryclean:
-	$(RM) -f $(PICTURES) $(GV_FILES) $(ASM_FILES)
-
+	$(RM) -rf ll gv img
