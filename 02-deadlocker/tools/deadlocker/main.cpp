@@ -69,7 +69,7 @@ main (int argc, char **argv, const char **env) {
   ModuleAnalysisManager MAM(true);
 
   AAManager AA ;
-  if (auto Err = PB.parseAAPipeline(AA, "basicaa"))
+  if (auto Err =PB.parseAAPipeline(AA, "basicaa cfl-anders-aa"))
     report_fatal_error("Error parsing basicaa AA pipeline");
   FAM.registerPass([&] {return std::move(AA);});
   MAM.registerPass([&] {return callgraphs::WeightedCallGraph();});

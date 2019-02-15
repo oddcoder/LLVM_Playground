@@ -14,10 +14,10 @@
 #   make clean
 #
 
-DEADLOCKER   := ../obj/tools/deadlocker/deadlocker
-CLANG        := /usr/bin/clang
-OPT          := /usr/bin/opt
-RM           := /bin/rm
+DEADLOCKER   := ../build/tools/deadlocker/deadlocker
+CLANG        := clang
+OPT          := opt
+RM           := rm
 SOURCE_FILES := $(sort $(wildcard c/*.c))
 ASM_FILES    := $(addprefix ll/,$(notdir $(SOURCE_FILES:.c=.ll)))
 TXT_FILES    := $(addprefix txt/,$(notdir $(ASM_FILES:.ll=.txt)))
@@ -31,7 +31,7 @@ bin: $(BINARIES)
 
 
 ll/%.ll: c/%.c
-	$(CLANG) -g -emit-llvm -S $< -o - | $(OPT) -mem2reg -S -o $@
+	$(CLANG) -g -emit-llvm -O2 -mllvm -disable-llvm-optzns -S $< -o - | $(OPT) -mem2reg -S -o $@
 
 txt/%.txt: ll/%.ll
 	$(DEADLOCKER) $< > $@
