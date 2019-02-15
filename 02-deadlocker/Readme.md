@@ -1,8 +1,25 @@
 # Deadlocker
 
+Deadlocker is tool implemented to capture undefined states of pthread mutexes,
+it is originally written following [Project 2: Interprocedural Dataflow](
+http://www.cs.sfu.ca/~wsumner/teaching/886/15/project2.html).
 
-Building
-========
+Ideally, A mutex should first be initialized by `pthread_mutex_init` function,
+after that it can be locked and unlocked as much as needed.
+
+Deadlocker captures the following mutex misuses:-
+
+- Locking or unlocking uninitialized mutex.
+- Mutex double locking.
+- Mutex double unlocking.
+
+Deadlocker implements interprocedural context-sensitive, flow-sensitive, mutex
+abstract state data flow analysis. It uses built in alias analysis to keep track
+of pointers referencing the same mutex. However, it is advised to always compile
+the target module using `-O2 -mllvm -disable-llvm-optzns` and make a `-mem2reg`
+transformation before invoking deadlocker.
+
+## Building
 
 These instructions assume that your current directory starts out as the
 "deadlocker" directory within the package.
@@ -14,10 +31,10 @@ $ cmake ..
 $ make
 ```
 
-This produces a dynamic deadlocker tool called
-tools/deadlocker/deadlocker.
+## Usage
 
-Running the double locking violation detector:
-e.g.
-clang -g -c -emit-llvm ../deadlocker/test/simpletest.c -o locky.bc
-tools/deadlocker/deadlocker locky.bc
+```
+$ clang -g -emit-llvm -O2 -mllvm -disable-llvm-optzns -S [target_file.c] -o - | $(OPT) -mem2reg -S -o [target_file.ll]
+$ deadlocker [target_file.ll]
+``
+
