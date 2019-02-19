@@ -1,0 +1,35 @@
+
+These instructions assume that your current directory starts out as the
+"pathprofiler" directory within the package.
+
+
+Building with CMake
+==============================================
+
+1. Create a new directory for building.
+  e.g. mkdir ../pathprofilerbuild
+
+2. Change into the new directory.
+  e.g. cd ../pathprofilerbuild
+
+3. Run CMake with the path to the LLVM source. For LLVM 3.5
+and later, LLVM can be built with configure even if pathprofiler is built
+with CMake.
+  e.g. cmake -DLLVM_DIR=</path/to/LLVM/build>/share/llvm/cmake/ ../pathprofiler
+
+4. Run make inside the build directory.
+  e.g. make
+
+This produces a dynamic pathprofiler tool called
+tools/pathprofiler/pathprofiler
+
+First instrument the analyzed program:
+e.g.
+clang -g -c -emit-llvm ../pathprofiler/test/simpletest.c -o loopy.bc
+tools/pathprofiler/pathprofiler loopy.bc -o loopy
+./loopy
+
+Then run the profile analyzer:
+tools/pathprofiler/pathprofiler loopy.bc -p path-profile-results -n 5
+
+
